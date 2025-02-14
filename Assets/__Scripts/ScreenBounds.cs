@@ -1,23 +1,47 @@
-﻿using UnityEngine;
+﻿//using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
+
+/// <summary>
+/// <para>This class should be attached to a child of Camera.main. It triggers various
+///  behaviors to happen when a GameObject exits the screen.</para>
+/// <para>NOTE: Camera.main must be orthographic.</para>
+/// <para>NOTE: This GameObject must have a BoxCollider attached.</para>
+/// <para>NOTE: If Camera.main is going to move or rotate over time, then it will need
+///  to have a Rigidbody attached so that the physics engine properly updates the 
+///  position and rotation of this BoxCollider.</para>
+/// </summary>
+[RequireComponent(typeof(BoxCollider))]
 public class ScreenBounds : MonoBehaviour
 {
-    static private ScreenBounds S;
-    
+    static private ScreenBounds S; // Private but unprotected Singleton.
+
+
     public float zScale = 10;
 
     Camera cam;
     BoxCollider boxColl;
     float cachedOrthographicSize, cachedAspect;
     Vector3 cachedCamScale;
-    
+
+
     void Awake()
     {
         S = this;
 
         cam = Camera.main;
-        
+        // Need to make sure that the camera is Orthographic for this to work
+        if (!cam.orthographic)
+        {
+            Debug.LogError("ScaleToCamera:Start() - Camera.main needs to be orthograhic " +
+                           "for ScaleToCamera to work, but this camera is not orthograhic.");
+        }
+
+        // No need to check whether boxColl is null because of RequireComponent above.
         boxColl = GetComponent<BoxCollider>();
+        // Setting boxColl.size to 1 ensures that other calculations will be correct.
         boxColl.size = Vector3.one;
 
         transform.position = Vector3.zero;
@@ -30,9 +54,13 @@ public class ScreenBounds : MonoBehaviour
         ScaleSelf();
     }
 
-    
+
+    // Scale this Transform to match what cam can see.
     private void ScaleSelf()
     {
+        // Check here to see whether anything has changed about cam.orthographicSize
+        //  or cam.aspect. If those values are the same as cached, then there is no
+        //  need to change the localScale of this.transform.
         if (cam.orthographicSize != cachedOrthographicSize || cam.aspect != cachedAspect
             || cam.transform.localScale != cachedCamScale)
         {
@@ -52,10 +80,16 @@ public class ScreenBounds : MonoBehaviour
         scaleDesired.z = zScale;
         scaleDesired.y = cam.orthographicSize * 2;
         scaleDesired.x = scaleDesired.y * cam.aspect;
-        
+
+        // This line makes use of the Vector3 extension method defined in Vector3Extensions
         scaleColl = scaleDesired.ComponentDivide(cachedCamScale);
+        // Assigning the result of this ComponentDivide to a variable makes 
+        //  debugging easier because you can see the value before it is returned.
         return scaleColl;
     }
+
+
+
 
     static public Vector3 RANDOM_ON_SCREEN_LOC
     {
@@ -68,36 +102,6 @@ public class ScreenBounds : MonoBehaviour
         }
     }
 
-    static public Vector3 RANDOM_ON_EDGE_SCREEN_LOC
-    {
-        get
-        {
-            Vector3 min = S.boxColl.bounds.min;
-            Vector3 max = S.boxColl.bounds.max;
-
-            System.Random rnd = new System.Random();
-
-            int randomInt = rnd.Next(4);
-            if (randomInt == 1) 
-            {
-                return new Vector3(min.x, Random.Range(min.y, max.y), 0);
-            } 
-            else  if (randomInt == 2)
-            {
-                return new Vector3(max.x, Random.Range(min.y, max.y), 0);
-            }
-            else  if (randomInt == 3)
-            {
-                return new Vector3(Random.Range(min.x, max.x), min.y, 0);
-            }
-            else
-            {
-                return new Vector3(Random.Range(min.x, max.x), max.y, 0);
-            }
-
-            
-        }
-    }
 
     static public Bounds BOUNDS
     {
@@ -117,6 +121,7 @@ public class ScreenBounds : MonoBehaviour
         }
     }
 
+
     static public bool OOB(Vector3 worldPos)
     {
         Vector3 locPos = S.transform.InverseTransformPoint(worldPos);
@@ -125,6 +130,7 @@ public class ScreenBounds : MonoBehaviour
         // If that furthest distance is >0.5f, then worldPos is out of bounds
         return (maxDist > 0.5f);
     }
+
 
     static public int OOB_X(Vector3 worldPos)
     {
@@ -142,6 +148,7 @@ public class ScreenBounds : MonoBehaviour
         return OOB_(locPos.z);
     }
 
+
     static private int OOB_(float num)
     {
         if (num > 0.5f) return 1;
@@ -149,3 +156,5 @@ public class ScreenBounds : MonoBehaviour
         return 0;
     }
 }
+
+
