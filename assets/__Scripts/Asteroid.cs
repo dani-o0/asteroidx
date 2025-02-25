@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -23,7 +22,7 @@ public class Asteroid : MonoBehaviour
     public void Initialize(int newSize, string namePrefix, Transform parent)
     {
         size = newSize;
-        transform.localScale = Vector3.one * (size * AsteroidsScriptableObject.S.asteroidScale);
+        transform.localScale = Vector3.one * (size * AsteraX.S.AsteroidsSO.asteroidScale);
         name = namePrefix;
 
         if (parent != null)
@@ -48,11 +47,11 @@ public class Asteroid : MonoBehaviour
 
     public void GenerateChildren(int newSize, Transform parent)
     {
-        if (newSize < 1) return;  // Detener si el tamaño es menor a 1
+        if (newSize < 1) return;
 
-        for (int i = 0; i < AsteroidsScriptableObject.S.numSmallerAsteroidsToSpawn; i++)
+        for (int i = 0; i < AsteraX.S.AsteroidsSO.numSmallerAsteroidsToSpawn; i++)
         {
-            GameObject asteroidPrefab = AsteroidsScriptableObject.S.GetAsteroidPrefab();
+            GameObject asteroidPrefab = AsteraX.S.AsteroidsSO.GetAsteroidPrefab();
             Vector3 spawnPosition = transform.position + Random.onUnitSphere * 0.5f;
             GameObject asteroidObject = Instantiate(asteroidPrefab, spawnPosition, Random.rotation);
             Asteroid asteroid = asteroidObject.GetComponent<Asteroid>();
@@ -70,8 +69,7 @@ public class Asteroid : MonoBehaviour
             children.Add(asteroid);
         }
     }
-
-    // Gestionar la colisión
+    
     void OnCollisionEnter(Collision coll)
     {
         GameObject collObj = coll.gameObject;

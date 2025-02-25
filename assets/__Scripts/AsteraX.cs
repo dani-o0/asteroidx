@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class AsteraX : MonoBehaviour
@@ -40,8 +37,11 @@ public class AsteraX : MonoBehaviour
 
             asteroidRigidbody.isKinematic = false;
             asteroidOffScreenWrapper.enabled = true;
-            asteroid.Initialize(size, i.ToString(), null);
-            asteroid.GenerateChildren(size - 1, asteroidObject.transform);
+            asteroid.minVel = AsteroidsSO.minVel;
+            asteroid.maxVel = AsteroidsSO.maxVel;
+            asteroid.maxAngularVel = AsteroidsSO.maxAngularVel;
+            asteroid.Initialize(AsteroidsSO.initialSize, i.ToString(), null);
+            asteroid.GenerateChildren(AsteroidsSO.initialSize, asteroidObject.transform);
         }
     }
 }
