@@ -22,7 +22,7 @@ public class AsteraX : MonoBehaviour
 
     void Start()
     {
-        GenerateAsteroids(AsteroidsSO.initialSize);
+        GenerateAsteroids(3);
     }
 
     void GenerateAsteroids(int size)
@@ -30,14 +30,16 @@ public class AsteraX : MonoBehaviour
         for (int i = 0; i < size; i++)
         {
             Vector3 spawnPosition = player.position + Random.onUnitSphere * 5;
-
-            if (AsteroidsSO == null || AsteroidsSO.asteroidPrefabs.Length == 0)
-                return;
+            spawnPosition.z = player.position.z;
 
             GameObject asteroidPrefab = AsteroidsSO.GetAsteroidPrefab();
             GameObject asteroidObject = Instantiate(asteroidPrefab, spawnPosition, Random.rotation);
             Asteroid asteroid = asteroidObject.GetComponent<Asteroid>();
+            Rigidbody asteroidRigidbody = asteroidObject.GetComponent<Rigidbody>();
+            OffScreenWrapper asteroidOffScreenWrapper = asteroidObject.GetComponent<OffScreenWrapper>();
 
+            asteroidRigidbody.isKinematic = false;
+            asteroidOffScreenWrapper.enabled = true;
             asteroid.Initialize(size, i.ToString(), null);
             asteroid.GenerateChildren(size - 1, asteroidObject.transform);
         }

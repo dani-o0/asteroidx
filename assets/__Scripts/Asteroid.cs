@@ -12,15 +12,12 @@ public class Asteroid : MonoBehaviour
     public float maxAngularVel = 10;
     private Rigidbody rigid;
     private int size;
+    private List<Asteroid> children;
 
     void Awake()
     {
+        children = new List<Asteroid>();
         rigid = GetComponent<Rigidbody>();
-    }
-
-    void Start()
-    {
-        //InitVelocity();
     }
     
     public void Initialize(int newSize, string namePrefix, Transform parent)
@@ -39,10 +36,14 @@ public class Asteroid : MonoBehaviour
 
     void InitVelocity()
     {
-        Vector3 vel = ScreenBounds.OOB(transform.position) ? ((Vector3)Random.insideUnitCircle * 4) - transform.position : Random.insideUnitCircle;
-        vel.Normalize();
-        rigid.velocity = vel * Random.Range(minVel, maxVel);
-        rigid.angularVelocity = Random.insideUnitSphere * maxAngularVel;
+        Vector2 vel2D = ScreenBounds.OOB(transform.position) ? Random.insideUnitCircle * 4 - (Vector2)transform.position : Random.insideUnitCircle;
+        vel2D.Normalize();
+
+        rigid.velocity = new Vector3(vel2D.x, vel2D.y, 0) * Random.Range(minVel, maxVel);
+        rigid.angularVelocity = new Vector3(0, 0, Random.Range(-maxAngularVel, maxAngularVel));
+
+        // Mantener la misma Z que el player
+        transform.position = new Vector3(transform.position.x, transform.position.y, AsteraX.S.player.position.z);
     }
 
     public void GenerateChildren(int newSize, Transform parent)
@@ -55,11 +56,18 @@ public class Asteroid : MonoBehaviour
             Vector3 spawnPosition = transform.position + Random.onUnitSphere * 0.5f;
             GameObject asteroidObject = Instantiate(asteroidPrefab, spawnPosition, Random.rotation);
             Asteroid asteroid = asteroidObject.GetComponent<Asteroid>();
+            Rigidbody asteroidRigidbody = asteroidObject.GetComponent<Rigidbody>();
+            OffScreenWrapper asteroidOffScreenWrapper = asteroidObject.GetComponent<OffScreenWrapper>();
+            MeshCollider asteroidCollider = asteroidObject.GetComponent<MeshCollider>();
             
-
             string childName = name + "-" + i;
+            asteroidRigidbody.isKinematic = true;
+            asteroidOffScreenWrapper.enabled = false;
+            asteroidCollider.enabled = false;
             asteroid.Initialize(newSize, childName, parent);
             asteroid.GenerateChildren(newSize - 1, asteroidObject.transform);
+            
+            children.Add(asteroid);
         }
     }
 
@@ -68,9 +76,47 @@ public class Asteroid : MonoBehaviour
     {
         GameObject collObj = coll.gameObject;
 
-        if (collObj.CompareTag("Bullet") || collObj.CompareTag("Player"))
+        if (collObj.CompareTag("Bullet"))
         {
             Destroy(collObj);
+            
+            foreach (Asteroid child in children)
+            {
+                if (child != null)
+                {
+                    Rigidbody childRb = child.GetComponent<Rigidbody>();
+                    OffScreenWrapper childOfw = child.GetComponent<OffScreenWrapper>();
+                    MeshCollider childCollider = child.GetComponent<MeshCollider>();
+                    
+                    child.transform.SetParent(null);
+                    childOfw.enabled = true;
+                    childRb.isKinematic = false;
+                    childCollider.enabled = true;
+                    child.InitVelocity();
+                }
+            }
+            
+            Destroy(gameObject);
+        }
+
+        if (collObj.CompareTag("Player"))
+        {
+            foreach (Asteroid child in children)
+            {
+                if (child != null)
+                {
+                    Rigidbody childRb = child.GetComponent<Rigidbody>();
+                    OffScreenWrapper childOfw = child.GetComponent<OffScreenWrapper>();
+                    MeshCollider childCollider = child.GetComponent<MeshCollider>();
+                    
+                    child.transform.SetParent(null);
+                    childOfw.enabled = true;
+                    childRb.isKinematic = false;
+                    childCollider.enabled = true;
+                    child.InitVelocity();
+                }
+            }
+            
             Destroy(gameObject);
         }
     }
